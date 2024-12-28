@@ -8,3 +8,13 @@ misc
 pbs
 reproducibility
 bash
+
+
+output_uv/
+
+.vscode
+.venv
+.ruff_cache
+.repomix-output.md
+stats*
+db_output/

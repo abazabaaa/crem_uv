@@ -1,43 +1,40 @@
-import joblib
-import numpy as np
 import random
 import sys
-
 from collections import OrderedDict, defaultdict
 from multiprocessing import cpu_count
 
-from crem.crem import _get_replacements
+import joblib
+import numpy as np
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
-from .crem import grow_mol2, mutate_mol2
+# from crem.core.crem import _get_replacements, grow_mol2, mutate_mol2
+from crem.core.operations import grow_mol2, mutate_mol2
+from crem.core.replacement import _get_replacements
 
 
 def __get_child_added_atom_ids(child_mol):
-    '''
-    Returns ids of atoms in a current mol which were added upon grow/mutation procedure
+    """Returns ids of atoms in a current mol which were added upon grow/mutation procedure
     # After RDKit reaction procedure there is a field <react_atom_idx> with initial parent atom idx in a child mol
-    '''
+    """
     added_mol_ids = []
     for a in child_mol.GetAtoms():
-        if not a.HasProp('react_atom_idx'):
+        if not a.HasProp("react_atom_idx"):
             added_mol_ids.append(a.GetIdx())
     return sorted(added_mol_ids)
 
 
 def __get_child_protected_atom_ids(mol, protected_parent_ids):
-    '''
-
-    :param mol:
+    """:param mol:
     :param protected_parent_ids: ids of a parent molecule which were protected and should be transferred to the
                                  current molecule
     :type  protected_parent_ids: list[int]
     :return: sorted list of integers
-    '''
+    """
     # After RDKit reaction procedure there is a field <react_atom_idx> with initial parent atom idx in product mol
     protected_mol_ids = []
     for a in mol.GetAtoms():
-        if a.HasProp('react_atom_idx') and int(a.GetProp('react_atom_idx')) in protected_parent_ids:
+        if a.HasProp("react_atom_idx") and int(a.GetProp("react_atom_idx")) in protected_parent_ids:
             protected_mol_ids.append(a.GetIdx())
     return sorted(protected_mol_ids)
 
@@ -45,15 +42,26 @@ def __get_child_protected_atom_ids(mol, protected_parent_ids):
 def __mol_with_atom_index(mol):
     atoms = mol.GetNumAtoms()
     for idx in range(atoms):
-        mol.GetAtomWithIdx(idx).SetProp('molAtomMapNumber', str(mol.GetAtomWithIdx(idx).GetIdx()))
+        mol.GetAtomWithIdx(idx).SetProp("molAtomMapNumber", str(mol.GetAtomWithIdx(idx).GetIdx()))
     return mol
 
 
-def enumerate_compounds(mol, db_fname, mode='scaffold', n_iterations=1, radius=3, max_replacements=None,
-                        protected_ids=None, replace_ids=None, min_freq=0, protect_added_frag=False, return_smi=False,
-                        ncpu=None, **kwargs):
-    '''
-    Convenience function to perform scaffold decoration or enumeration of analog series. This performs in multiple
+def enumerate_compounds(
+    mol,
+    db_fname,
+    mode="scaffold",
+    n_iterations=1,
+    radius=3,
+    max_replacements=None,
+    protected_ids=None,
+    replace_ids=None,
+    min_freq=0,
+    protect_added_frag=False,
+    return_smi=False,
+    ncpu=None,
+    **kwargs,
+):
+    """Convenience function to perform scaffold decoration or enumeration of analog series. This performs in multiple
     iterations by modification of compounds enumerated on the previous iteration. May result in combinatorial explosion.
     The function returns the list of distinct molecules generated over all iterations.
 
@@ -109,9 +117,8 @@ def enumerate_compounds(mol, db_fname, mode='scaffold', n_iterations=1, radius=3
     :replace_cycles: looking for replacement of a fragment containing cycles irrespectively of the fragment size.
                     Default: False.
 
-    '''
-
-    if mode not in ['scaffold', 'analogs']:
+    """
+    if mode not in ["scaffold", "analogs"]:
         raise ValueError('Wrong mode. Please choose one from the list - "analogs","scaffold"')
 
     if ncpu is None:
@@ -121,11 +128,11 @@ def enumerate_compounds(mol, db_fname, mode='scaffold', n_iterations=1, radius=3
     pool = joblib.Parallel(n_jobs=ncpu)
 
     # to check if the statical arguments are in the kwargs dict
-    for kw in ['return_mol', 'return_rxn', 'return_rxn_freq', 'ncores']:
+    for kw in ["return_mol", "return_rxn", "return_rxn_freq", "ncores"]:
         if kw in kwargs:
             kwargs.pop(kw)
 
-    if mode == 'scaffold':
+    if mode == "scaffold":
         protect_added_frag = True
 
     if protected_ids is None and replace_ids is not None:
@@ -140,23 +147,44 @@ def enumerate_compounds(mol, db_fname, mode='scaffold', n_iterations=1, radius=3
 
     for n in range(n_iterations):
         new_mols = ()
-        if mode == 'scaffold':
-            new_mols = pool(joblib.delayed(grow_mol2)(m, db_name=db_fname, protected_ids=prot_ids,
-                                                      min_freq=min_freq, radius=radius,
-                                                      max_replacements=max_replacements,
-                                                      return_mol=True, return_rxn=False, return_rxn_freq=False,
-                                                      ncores=1 if len(start_mols) > 1 else ncpu, **kwargs)
-                            for m, prot_ids in start_mols.items())
-        if mode == 'analogs':
-            new_mols = pool(joblib.delayed(mutate_mol2)(m, db_name=db_fname, protected_ids=prot_ids,
-                                                        min_freq=0, radius=radius, max_replacements=max_replacements,
-                                                        return_mol=True, return_rxn=False, return_rxn_freq=False,
-                                                        ncores=1 if len(start_mols) > 1 else ncpu, **kwargs)
-                            for m, prot_ids in start_mols.items())
+        if mode == "scaffold":
+            new_mols = pool(
+                joblib.delayed(grow_mol2)(
+                    m,
+                    db_name=db_fname,
+                    protected_ids=prot_ids,
+                    min_freq=min_freq,
+                    radius=radius,
+                    max_replacements=max_replacements,
+                    return_mol=True,
+                    return_rxn=False,
+                    return_rxn_freq=False,
+                    ncores=1 if len(start_mols) > 1 else ncpu,
+                    **kwargs,
+                )
+                for m, prot_ids in start_mols.items()
+            )
+        if mode == "analogs":
+            new_mols = pool(
+                joblib.delayed(mutate_mol2)(
+                    m,
+                    db_name=db_fname,
+                    protected_ids=prot_ids,
+                    min_freq=0,
+                    radius=radius,
+                    max_replacements=max_replacements,
+                    return_mol=True,
+                    return_rxn=False,
+                    return_rxn_freq=False,
+                    ncores=1 if len(start_mols) > 1 else ncpu,
+                    **kwargs,
+                )
+                for m, prot_ids in start_mols.items()
+            )
 
         parent_protected_ids_list = start_mols.values()
         start_mols = OrderedDict()
-        for childs, parent_protected_ids in zip(new_mols, parent_protected_ids_list):
+        for childs, parent_protected_ids in zip(new_mols, parent_protected_ids_list, strict=False):
             for items in childs:
                 if items[0] not in generated_mols:
                     protected_ids = __get_child_protected_atom_ids(items[1], parent_protected_ids)
@@ -171,17 +199,15 @@ def enumerate_compounds(mol, db_fname, mode='scaffold', n_iterations=1, radius=3
             break
 
     if n + 1 < n_iterations:
-        sys.stderr.write(f'INFO. Procedure is finished after {n + 1} iterations instead of {n_iterations}\n')
+        sys.stderr.write(f"INFO. Procedure is finished after {n + 1} iterations instead of {n_iterations}\n")
 
     if not return_smi:
         return list(generated_mols.values())
-    else:
-        return list(generated_mols.keys())
+    return list(generated_mols.keys())
 
 
 def sample_csp3(row_ids, cur, radius, n):
-    """
-    Performs random selection of fragments proportionally to a squared fraction of sp3 carbon atoms.
+    """Performs random selection of fragments proportionally to a squared fraction of sp3 carbon atoms.
     :param row_ids: the list of row ids of fragments to consider
     :param cur: cursor to the fragment database
     :param radius: context radius
@@ -206,8 +232,7 @@ def sample_csp3(row_ids, cur, radius, n):
 
 
 def filter_max_ring_size(row_ids, cur, radius, max_size=6):
-    """
-    Remove fragments having a ring size greater than a maximum threshold value
+    """Remove fragments having a ring size greater than a maximum threshold value
     :param row_ids: the list of row ids of fragments to consider
     :param cur: cursor to the fragment database
     :param radius: context radius

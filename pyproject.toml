@@ -1,0 +1,58 @@
+[project]
+name = "crem"
+version = "0.2.14"
+description = "CReM: chemically reasonable mutations framework"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "BSD-3-Clause"
+
+# These dependencies mirror the older repo's requirements.txt
+dependencies = [
+    "m2r>=0.2",
+    "sphinx>=5.0",
+    "sphinx_rtd_theme>=1.0",
+    "sphinxcontrib-applehelp>=1.0",
+    "sphinxcontrib-devhelp>=1.0",
+    "sphinxcontrib-htmlhelp>=2.0",
+    "sphinxcontrib-jsmath>=1.0",
+    "sphinxcontrib-qthelp>=1.0",
+    "sphinxcontrib-serializinghtml>=1.0",
+    "sphinxcontrib-programoutput>=0.18",
+    "pandas>=2.2.3",
+    "rdkit>=2024.3.6",
+    "guacamol",
+    "rich>=13.9.4",
+    "snakeviz>=2.2.2",
+    "line-profiler>=4.2.0",
+    "notebook>=7.3.2",
+    "ipykernel>=6.29.5",
+    "ipywidgets>=8.1.5",
+]
+
+# Define your console_scripts entry points here
+[project.scripts]
+fragmentation = "crem.cli.fragmentation:entry_point"
+frag_to_env = "crem.cli.frag_to_env_mp:entry_point"
+env_to_db = "crem.cli.import_env_to_db:entry_point"
+guacamol_test = "crem.cli.guacamol_crem_test:entry_point"
+crem_add_prop = "crem.cli.crem_add_prop:entry_point"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+  "pyright>=1.1.389", 
+  "ruff>=0.7.4"
+]
+
+[tool.uv.sources]
+guacamol = { path = "../guacamol/dist/guacamol-0.5.5.tar.gz" }
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+select = [
+    "ALL", # include all the rules, including new ones
+]

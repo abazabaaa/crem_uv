@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-#==============================================================================
+# ==============================================================================
 # author          : Pavel Polishchuk
 # date            : 31-08-2018
 # version         :
 # python_version  :
 # copyright       : Pavel Polishchuk 2018
 # license         :
-#==============================================================================
+# ==============================================================================
 
 import re
 import sys
+
 from rdkit import Chem
 
 
@@ -31,7 +32,7 @@ def mol_to_smarts(mol, keep_h=True):
     # print out the smiles - all the atom attributes will be fully specified
     smarts = Chem.MolToSmiles(mol, isomericSmiles=True, allBondsExplicit=True)
     # remove the 42 isotope labels
-    smarts = re.sub(r'\[42', "[", smarts)
+    smarts = re.sub(r"\[42", "[", smarts)
 
     return smarts
 

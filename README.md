@@ -84,6 +84,25 @@ env_to_db -i r3_c.txt -o fragments.db -r 3 -c -v
 
 Last three steps should be executed for each radius. All tables can be stored in the same database.
 
+```bash
+python guacamol_crem_test.py \
+    --smiles_file /Users/thomasgraham/prj/crem/example/CHEMBL231.smi \
+    --db_fname /Users/thomasgraham/prj/crem/output_uv/fragments.db \
+    --selection_size 50 \
+    --radius 3 \
+    --replacements 1000 \
+    --min_size 0 \
+    --max_size 10 \
+    --min_inc -10 \
+    --max_inc 10 \
+    --generations 1000 \
+    --ncpu 10 \
+    --seed 42 \
+    --output_dir /path/to/output \
+    --suite v2 \
+    --log_level DEBUG
+```
+
 ## Structure generation
 
 Import necessary functions from the main module
